@@ -1,0 +1,1148 @@
+---
+alwaysApply: true
+---
+
+This project implements Morpheus.dev, a visual mock-backend builder for developers.
+
+The system allows users to define database schemas (tables, fields, relationships) through a UI, generate realistic mock data, and automatically expose REST API endpoints that behave like a real backend.
+
+The architecture is split into two core layers:
+1. Metadata layer (PostgreSQL): stores project definitions, schema, relationships, and endpoint configuration.
+2. Runtime layer (SQLite per project): stores generated data and serves API requests.
+
+The backend dynamically compiles user-defined schemas into SQL, generates runtime databases, and exposes endpoints such as:
+- GET /runtime/:project/:table
+- GET /runtime/:project/:table/:id
+- POST /runtime/:project/:table
+
+The frontend is a React + TypeScript application used to:
+- create and manage projects
+- define schema visually
+- generate and preview data
+- view and consume endpoints
+
+Key constraints:
+- schema is the source of truth
+- no direct SQL input from users
+- runtime data must be isolated per project
+- endpoints must be generated automatically from schema
+
+The MVP must support:
+- tables and fields
+- mock data generation
+- basic relationships (one-to-many)
+- GET and POST endpoints
+
+Do not implement advanced features (auth rules, GraphQL, exports, etc.) until core functionality is stable.
+
+---
+
+# Morpheus.dev
+
+**Tagline:** Build a backend before your backend exists.
+
+Morpheus.dev is a visual mock-backend builder for developers. It allows users to define tables and schemas, generate realistic mock data, create relationships without writing SQL, expose live REST endpoints for development use, and later export the project structure toward a production-ready backend such as Supabase.
+
+This document is the product definition, architecture spec, data model reference, MVP scope, and implementation guide for the first version of Morpheus.dev.
+
+---
+
+# 1. Product Summary
+
+## 1.1 Core Idea
+Developers often need a working backend before the real backend is ready. Today they patch together JSON files, ad hoc mock servers, temporary databases, Postman mocks, or quick Supabase setups.
+
+Morpheus.dev solves that by letting developers:
+
+- create tables visually
+- define schema fields and constraints
+- generate mock records
+- define relationships between tables
+- automatically expose REST endpoints
+- connect the generated backend to their frontend or development environment in real time
+- eventually export schema and seed structure to platforms like Supabase
+
+## 1.2 Primary Outcome
+The product should make it possible for a developer to go from nothing to a usable backend in minutes.
+
+## 1.3 Core Value Proposition
+> Spin up a working backend with real endpoints in under 2 minutes.
+
+## 1.4 Target User
+Primary users:
+
+- frontend developers
+- fullstack developers prototyping features
+- solo builders
+- startup teams building MVPs
+- product engineers working ahead of backend readiness
+
+Secondary users:
+
+- QA engineers creating testable environments
+- agencies prototyping client systems
+- technical product teams validating workflows
+
+---
+
+# 2. Product Positioning
+
+## 2.1 What Morpheus.dev Is
+Morpheus.dev is a:
+
+- visual mock backend builder
+- schema-first development tool
+- mock data generator
+- live API runtime for frontend development
+- bridge between prototype backend and future production backend
+
+## 2.2 What Morpheus.dev Is Not
+It is not initially:
+
+- a full backend-as-a-service replacement
+- a full ORM platform
+- a general cloud hosting platform
+- a production-grade auth and permissions layer
+- an enterprise API gateway
+- a generic no-code app builder
+
+## 2.3 Positioning Statement
+For developers who need a working backend before the real backend exists, Morpheus.dev provides a visual way to define data models, generate realistic data, and expose live APIs instantly, without requiring manual backend setup.
+
+---
+
+# 3. Product Principles
+
+1. **Instant first value**  
+   A user should be able to create a project, define a table, generate records, and call a real endpoint in a few minutes.
+
+2. **Schema-first**  
+   The schema is the source of truth. Endpoints and data generation should derive from it.
+
+3. **Visual, but developer-friendly**  
+   The interface should be visual and intuitive, but still feel like a serious engineering tool.
+
+4. **No SQL required, but SQL-compatible**  
+   Users should not need SQL, but the system should compile to clean SQL behind the scenes.
+
+5. **Mock-first, export-later**  
+   The initial promise is a development backend. Export to production systems comes later.
+
+6. **Low-friction integration**  
+   The generated endpoints should be easy to consume from any frontend app.
+
+7. **Safe isolation**  
+   Metadata and runtime data should be separated cleanly.
+
+---
+
+# 4. MVP Definition
+
+## 4.1 MVP Goal
+Deliver the minimum version that proves the product promise:
+
+> Define tables, generate data, expose working REST endpoints, and use them in development immediately.
+
+## 4.2 MVP Features
+The MVP should include:
+
+- user authentication
+- project creation
+- table creation
+- field creation and editing
+- field types and simple constraints
+- row count configuration for mock generation
+- mock data generation
+- basic one-to-many or many-to-one relationships
+- auto-generated REST endpoints per table
+- GET list endpoint
+- GET by id endpoint
+- POST create endpoint
+- live runtime API per project
+- API URL copy/paste experience
+- data preview table
+- simple environment panel for dev usage
+
+## 4.3 Excluded from MVP
+The following should not be in v1:
+
+- GraphQL
+- PATCH and DELETE endpoints
+- custom endpoint logic
+- per-endpoint auth policies
+- role-based permissions
+- many-to-many visual shortcut tooling
+- advanced query builder
+- webhook support
+- real-time subscriptions
+- collaboration and team workspaces
+- production deployment hosting
+- Supabase export
+- version history
+- advanced scenario simulation
+
+---
+
+# 5. User Stories
+
+## 5.1 Core User Stories
+- As a developer, I want to create tables and fields visually so I do not have to set up a database manually.
+- As a developer, I want to generate mock rows so I can test my frontend with realistic data.
+- As a developer, I want to define relationships between tables without writing SQL.
+- As a developer, I want REST endpoints to be created automatically so I can connect my frontend immediately.
+- As a developer, I want POST requests to create records so the mock backend behaves more like a real backend.
+- As a developer, I want to inspect the generated data so I can verify it matches what I need.
+- As a developer, I want to copy the live API URL and use it in my local environment quickly.
+- As a developer, I want the schema to stay as the source of truth, so changes to my models update the backend structure consistently.
+
+## 5.2 Future User Stories
+- As a developer, I want to export the schema and seed setup to Supabase later.
+- As a developer, I want to simulate edge cases like empty states and failure states later.
+- As a developer, I want to preview generated SQL if I need more control later.
+
+---
+
+# 6. Product Scope by Version
+
+## 6.1 V1
+- projects
+- tables
+- fields
+- row generation
+- basic relationships
+- GET and POST endpoints
+- runtime API
+- API docs lite
+- copy endpoint examples
+
+## 6.2 V2
+- visual canvas for relationships
+- filtering and query params
+- PATCH and DELETE support
+- improved mock strategies
+- schema validation improvements
+- endpoint toggles and naming controls
+
+## 6.3 V3
+- export to SQL
+- export to Supabase
+- seed export
+- OpenAPI export
+- reusable schema templates
+- edge-case scenario states
+
+---
+
+# 7. Recommended Tech Stack
+
+## 7.1 Frontend
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+- TanStack Query
+- React Hook Form
+- React Flow for relation/canvas mode
+- Zod for client-side validation
+
+## 7.2 Backend
+- Node.js
+- TypeScript
+- Fastify
+- Prisma for metadata database
+- PostgreSQL for metadata persistence
+- SQLite per project for runtime mock data
+- Faker or @faker-js/faker for data generation
+- Zod for request validation
+- optional BullMQ later for background generation jobs
+
+## 7.3 Monorepo / Tooling
+- Turborepo
+- pnpm
+- ESLint
+- Prettier
+- Vitest
+- Playwright or Cypress for end-to-end testing
+
+---
+
+# 8. System Architecture
+
+## 8.1 High-Level Architecture
+There are two distinct data systems:
+
+1. **Metadata database**  
+   Stores the project definition:
+   - projects
+   - tables
+   - fields
+   - relationships
+   - endpoint configurations
+   - environments
+
+2. **Runtime database**  
+   Stores the actual generated records for a specific project.
+
+This separation is essential.
+
+## 8.2 Why Separate Metadata and Runtime Data
+Metadata describes what the backend should be. Runtime data is the actual dataset and API state.
+
+Without separation:
+- schema evolution becomes brittle
+- project rebuilds become difficult
+- exports become messy
+- runtime mutations pollute builder configuration
+
+## 8.3 High-Level Diagram
+
+```text
+Frontend (React App)
+  ├── Auth
+  ├── Project Dashboard
+  ├── Schema Builder
+  ├── Data Preview
+  ├── Endpoints Panel
+  └── Relations Canvas
+
+Backend (Fastify API)
+  ├── Auth API
+  ├── Builder API
+  ├── Metadata Service
+  ├── Schema Compiler
+  ├── Mock Data Generator
+  ├── Runtime API Engine
+  └── Export Adapter Layer (future)
+
+Storage
+  ├── PostgreSQL (metadata)
+  └── SQLite per project (runtime data)
+```
+
+---
+
+# 9. Core System Components
+
+## 9.1 Frontend App
+The frontend handles all user interaction for project creation and backend modeling.
+
+### Frontend modules
+- Project Dashboard
+- Project Workspace
+- Schema Builder
+- Table Editor
+- Data Preview
+- Endpoints Panel
+- Relations Canvas
+- Environment Panel
+
+## 9.2 Builder API
+The internal API used by the Morpheus frontend to manage project metadata.
+
+Responsibilities:
+- create and update projects
+- create and update tables and fields
+- define relationships
+- trigger schema compilation
+- trigger data generation
+- read endpoint definitions
+- expose environment config
+
+## 9.3 Metadata Service
+This is the main source of truth for project definitions.
+
+Responsibilities:
+- persist project metadata
+- validate model structure
+- expose metadata to compiler and runtime engine
+
+## 9.4 Schema Compiler
+The service that converts visual schema definitions into actual runtime SQL structures.
+
+Responsibilities:
+- validate schema integrity
+- compute creation order
+- compile SQL for runtime database
+- rebuild runtime database when schema changes
+
+## 9.5 Mock Data Generator
+Generates records for each table according to field type and mock strategy.
+
+Responsibilities:
+- generate values by field type
+- enforce simple uniqueness where applicable
+- generate foreign key relationships correctly
+- generate rows in dependency order
+
+## 9.6 Runtime API Engine
+Serves the actual API endpoints that the developer’s app will consume.
+
+Responsibilities:
+- resolve endpoint definitions by project
+- execute SQL against the project runtime database
+- validate request payloads
+- return JSON responses
+
+## 9.7 Export Adapter Layer
+Future component.
+
+Responsibilities:
+- convert metadata into SQL migrations
+- generate seed scripts
+- produce Supabase-compatible export packages
+- produce OpenAPI definitions
+
+---
+
+# 10. Repository Structure
+
+Suggested monorepo structure:
+
+```text
+/apps
+  /web
+  /api
+
+/packages
+  /shared-types
+  /schema-compiler
+  /mock-generator
+  /runtime-engine
+  /validators
+  /exporters
+```
+
+## 10.1 App Responsibilities
+### /apps/web
+Frontend React app.
+
+### /apps/api
+Fastify backend app.
+
+## 10.2 Package Responsibilities
+### /packages/shared-types
+Shared domain types and DTOs.
+
+### /packages/schema-compiler
+Converts metadata into SQL operations and runtime DB definitions.
+
+### /packages/mock-generator
+Contains field strategies and row generation logic.
+
+### /packages/runtime-engine
+Generic CRUD runtime for project endpoints.
+
+### /packages/validators
+Shared schema validators using Zod.
+
+### /packages/exporters
+Future export adapters like Supabase or SQL bundle generation.
+
+---
+
+# 11. Domain Model
+
+## 11.1 User
+
+```ts
+type User = {
+  id: string
+  email: string
+  name?: string
+  createdAt: string
+  updatedAt: string
+}
+```
+
+## 11.2 Project
+
+```ts
+type Project = {
+  id: string
+  userId: string
+  name: string
+  slug: string
+  description?: string
+  status: 'draft' | 'active' | 'archived'
+  apiBasePath: string
+  createdAt: string
+  updatedAt: string
+}
+```
+
+## 11.3 Table
+
+```ts
+type Table = {
+  id: string
+  projectId: string
+  name: string
+  slug: string
+  displayName?: string
+  description?: string
+  rowCountTarget?: number
+  createdAt: string
+  updatedAt: string
+}
+```
+
+## 11.4 Field
+
+```ts
+type FieldType =
+  | 'string'
+  | 'text'
+  | 'integer'
+  | 'float'
+  | 'boolean'
+  | 'date'
+  | 'datetime'
+  | 'uuid'
+  | 'email'
+  | 'url'
+  | 'enum'
+  | 'json'
+
+type Field = {
+  id: string
+  tableId: string
+  name: string
+  slug: string
+  type: FieldType
+  isRequired: boolean
+  isUnique: boolean
+  isPrimaryKey: boolean
+  isNullable: boolean
+  defaultValue?: string
+  enumValues?: string[]
+  mockStrategy?: string
+  mockConfig?: Record<string, unknown>
+  orderIndex: number
+  createdAt: string
+  updatedAt: string
+}
+```
+
+## 11.5 Relationship
+
+```ts
+type RelationshipType =
+  | 'one_to_one'
+  | 'one_to_many'
+  | 'many_to_one'
+
+type Relationship = {
+  id: string
+  projectId: string
+  sourceTableId: string
+  sourceFieldId: string
+  targetTableId: string
+  targetFieldId: string
+  type: RelationshipType
+  onDelete?: 'cascade' | 'restrict' | 'set_null'
+  onUpdate?: 'cascade' | 'restrict'
+  createdAt: string
+  updatedAt: string
+}
+```
+
+## 11.6 Endpoint
+
+```ts
+type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE'
+
+type Endpoint = {
+  id: string
+  projectId: string
+  tableId?: string
+  name: string
+  path: string
+  method: HttpMethod
+  enabled: boolean
+  operationType: 'list' | 'getById' | 'create' | 'update' | 'delete' | 'custom'
+  requestSchema?: Record<string, unknown>
+  responseSchema?: Record<string, unknown>
+  createdAt: string
+  updatedAt: string
+}
+```
+
+## 11.7 Environment
+
+```ts
+type Environment = {
+  id: string
+  projectId: string
+  name: string
+  apiKey?: string
+  mode: 'development'
+  baseUrl: string
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+```
+
+## 11.8 Seed Job
+
+```ts
+type SeedJob = {
+  id: string
+  projectId: string
+  status: 'pending' | 'running' | 'completed' | 'failed'
+  totalTables: number
+  totalRowsGenerated: number
+  errorMessage?: string
+  createdAt: string
+  completedAt?: string
+}
+```
+
+---
+
+# 12. Metadata Database Schema Design
+
+Below is the conceptual relational structure for the metadata database.
+
+## 12.1 Tables
+- users
+- projects
+- project_tables
+- table_fields
+- relationships
+- endpoints
+- environments
+- seed_jobs
+
+## 12.2 Relationship Overview
+- one user has many projects
+- one project has many tables
+- one table has many fields
+- one project has many relationships
+- one project has many endpoints
+- one project has one or more environments
+- one project has many seed jobs
+
+---
+
+# 13. Runtime Data Strategy
+
+## 13.1 Runtime Storage Choice
+Use one SQLite database file per project.
+
+Example:
+```text
+/runtime-dbs/{projectId}.sqlite
+```
+
+## 13.2 Why SQLite per Project
+- easy isolation
+- cheap
+- simple reset and regeneration
+- easy file-based lifecycle
+- good for development usage
+- easier future export story
+
+## 13.3 Runtime Table Creation
+Tables are created dynamically based on schema metadata.
+
+Example generated SQL:
+
+```sql
+CREATE TABLE users (
+  id TEXT PRIMARY KEY,
+  first_name TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE orders (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  total_amount REAL NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+---
+
+# 14. Internal JSON Contract
+
+The metadata engine should be able to serialize a project to an internal JSON representation like this:
+
+```json
+{
+  "project": {
+    "name": "Demo Shop",
+    "slug": "demo-shop"
+  },
+  "tables": [
+    {
+      "name": "users",
+      "fields": [
+        { "name": "id", "type": "uuid", "primaryKey": true },
+        { "name": "first_name", "type": "string", "required": true, "mockStrategy": "firstName" },
+        { "name": "email", "type": "email", "required": true, "unique": true, "mockStrategy": "email" }
+      ],
+      "rowCountTarget": 100
+    },
+    {
+      "name": "orders",
+      "fields": [
+        { "name": "id", "type": "uuid", "primaryKey": true },
+        { "name": "user_id", "type": "uuid", "required": true },
+        { "name": "total_amount", "type": "float", "required": true, "mockStrategy": "price" }
+      ],
+      "rowCountTarget": 300
+    }
+  ],
+  "relationships": [
+    {
+      "sourceTable": "orders",
+      "sourceField": "user_id",
+      "targetTable": "users",
+      "targetField": "id",
+      "type": "many_to_one"
+    }
+  ]
+}
+```
+
+This internal JSON contract should become a foundational abstraction for:
+- schema compilation
+- runtime generation
+- export logic
+- future import/export support
+
+---
+
+# 15. Field Types and Mock Strategies
+
+## 15.1 Initial Supported Field Types
+- string
+- text
+- integer
+- float
+- boolean
+- date
+- datetime
+- uuid
+- email
+- url
+- enum
+- json
+
+## 15.2 Initial Mock Strategies
+Suggested first set:
+
+- firstName
+- lastName
+- fullName
+- email
+- username
+- companyName
+- sentence
+- paragraph
+- price
+- boolean
+- uuid
+- recentDate
+- pastDate
+- futureDate
+- phoneNumber
+- city
+- country
+- url
+- imageUrl
+
+## 15.3 Field-to-Mock Defaults
+If the user does not choose a mock strategy, infer a default by field type and field name where possible.
+
+Examples:
+- `email` field => email strategy
+- `first_name` => firstName strategy
+- `created_at` => recentDate or pastDate
+- `id` => uuid
+
+---
+
+# 16. Relationship Rules
+
+## 16.1 MVP Relationship Support
+Support:
+- one-to-one
+- one-to-many
+- many-to-one
+
+Do not support direct many-to-many as a first-class visual pattern in MVP.
+
+## 16.2 Many-to-Many Later
+Handle many-to-many later via explicit join tables.
+
+## 16.3 Relationship Constraints
+For MVP:
+- only allow foreign keys to target primary keys
+- enforce compatible data types
+- generate parent rows before child rows
+- prevent circular generation dependencies for v1
+
+---
+
+# 17. Endpoint Strategy
+
+## 17.1 Runtime Endpoint Format
+Suggested runtime API format:
+
+```text
+GET    /runtime/:projectSlug/:tableSlug
+GET    /runtime/:projectSlug/:tableSlug/:id
+POST   /runtime/:projectSlug/:tableSlug
+```
+
+Example:
+
+```text
+GET    /runtime/demo-shop/users
+GET    /runtime/demo-shop/users/123
+POST   /runtime/demo-shop/orders
+```
+
+## 17.2 Builder API Format
+Separate builder and runtime APIs completely.
+
+Example builder routes:
+
+```text
+POST   /api/projects
+GET    /api/projects/:projectId
+POST   /api/projects/:projectId/tables
+PATCH  /api/tables/:tableId
+POST   /api/tables/:tableId/fields
+PATCH  /api/fields/:fieldId
+POST   /api/projects/:projectId/relationships
+POST   /api/projects/:projectId/generate
+GET    /api/projects/:projectId/endpoints
+```
+
+## 17.3 Endpoint Operations in MVP
+Auto-generate:
+- list endpoint
+- get by id endpoint
+- create endpoint
+
+## 17.4 Deferred Operations
+Later:
+- update endpoint
+- delete endpoint
+- filtering
+- sorting
+- pagination
+- custom routes
+- nested routes
+
+---
+
+# 18. Example API Usage
+
+## 18.1 Example Fetch from Frontend
+
+```ts
+fetch("https://api.morpheus.dev/runtime/demo-shop/users")
+  .then((res) => res.json())
+  .then(console.log)
+```
+
+## 18.2 Example POST Request
+
+```ts
+fetch("https://api.morpheus.dev/runtime/demo-shop/orders", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    user_id: "6b5e7f9d-1234-5678-aaaa-bbbbbccccddd",
+    total_amount: 42.99
+  })
+})
+```
+
+---
+
+# 19. Suggested UI Structure
+
+## 19.1 Main Screens
+1. Auth / landing
+2. Project dashboard
+3. Project workspace
+4. Schema builder
+5. Table editor drawer or modal
+6. Data preview
+7. Endpoints panel
+8. Relations canvas
+9. Settings / environment panel
+
+## 19.2 Project Workspace Layout
+Suggested layout:
+- left sidebar: project tables
+- center main area: schema builder or canvas mode
+- right panel: field settings / endpoint details / generation settings
+- bottom or tabbed area: data preview and API preview
+
+## 19.3 First-Run UX
+The first success flow should be:
+
+1. Create project
+2. Add first table
+3. Add fields
+4. Set row count
+5. Generate records
+6. Copy endpoint
+7. Use endpoint in frontend app
+
+This first-run success path matters more than advanced features.
+
+---
+
+# 20. Implementation Phases
+
+## Phase 1: Foundation
+- monorepo setup
+- frontend app scaffold
+- backend API scaffold
+- auth
+- metadata DB setup
+- domain types
+- basic project CRUD
+
+## Phase 2: Schema Modeling
+- create/edit/delete tables
+- create/edit/delete fields
+- field type handling
+- validation rules
+- metadata persistence
+
+## Phase 3: Runtime Compiler
+- schema compiler
+- runtime SQLite creation
+- schema rebuild flow
+- table creation SQL generation
+
+## Phase 4: Mock Data Generation
+- field strategies
+- row count generation
+- generation order
+- uniqueness handling
+- foreign key generation
+
+## Phase 5: Runtime API
+- endpoint resolver
+- GET list
+- GET by id
+- POST create
+- JSON responses
+- input validation
+
+## Phase 6: UX Layer
+- data preview
+- endpoint viewer
+- copy snippets
+- environment panel
+
+## Phase 7: Relations
+- relation config form first
+- canvas mode later
+- compile foreign keys
+- relationship validation
+
+---
+
+# 21. Recommended Build Order
+
+If building this from scratch, build in this exact order:
+
+1. monorepo and dev tooling
+2. auth
+3. projects CRUD
+4. tables CRUD
+5. fields CRUD
+6. metadata persistence
+7. schema compiler
+8. runtime SQLite file generation
+9. mock generation
+10. runtime GET endpoints
+11. runtime POST endpoints
+12. data preview UI
+13. endpoint preview UI
+14. relationship support
+15. relation canvas
+
+Do not start with canvas mode.
+
+---
+
+# 22. Validation and Guardrails
+
+## 22.1 Schema Validation Rules
+- table names must be unique within a project
+- field names must be unique within a table
+- each table must have one primary key
+- relationship types must use compatible field types
+- required fields must not use invalid default values
+- enum values must not be empty when type is enum
+
+## 22.2 Runtime Validation Rules
+- POST body must match defined field schema
+- unique fields should reject duplicates
+- required fields should reject missing values
+- foreign key fields should validate referenced existence where practical
+
+---
+
+# 23. Future Export Design
+
+## 23.1 Export Goal
+Eventually allow a mock backend project to be promoted toward a real backend.
+
+## 23.2 Possible Export Outputs
+- SQL schema
+- seed data script
+- Supabase migration bundle
+- JSON schema bundle
+- OpenAPI spec
+- project archive
+
+## 23.3 Important Design Requirement
+Keep the metadata contract clean from day one so export is feasible later.
+
+---
+
+# 24. Risks and Non-Goals
+
+## 24.1 Main Risks
+- overbuilding the canvas before core backend generation works
+- mixing metadata and runtime records
+- trying to support too many field types too early
+- attempting full Supabase export in v1
+- allowing unrestricted custom endpoints too early
+- turning the tool into a generic BaaS too soon
+
+## 24.2 Non-Goals for Now
+- replace Supabase
+- replace Postman
+- replace a production backend
+- support every API pattern
+- support every SQL feature
+
+---
+
+# 25. Suggested Naming
+
+Primary recommendation:
+
+**Morpheus.dev**
+
+Alternative names:
+- Morpheus
+- Mockpheus
+- MorphDB
+- MorphAPI
+- Dreambase
+- PhantomDB
+- Simbase
+- ProtoBase
+- SeedForge
+
+## Final naming recommendation
+Use:
+
+**Morpheus.dev**
+
+Tagline:
+**Build a backend before your backend exists.**
+
+---
+
+# 26. Definition of Done for MVP
+
+The MVP is considered complete when a user can:
+
+1. sign up and create a project
+2. create at least two tables
+3. add fields to those tables
+4. configure a basic relationship
+5. generate mock rows
+6. see generated records in a preview table
+7. call a live GET endpoint from their frontend
+8. call a live POST endpoint and create a record
+9. edit schema and regenerate safely
+10. understand how to use the API without documentation friction
+
+---
+
+# 27. Immediate Next Development Tasks
+
+## Backend
+- define Prisma schema for metadata DB
+- implement project/table/field CRUD
+- design internal schema JSON contract
+- build schema compiler to SQLite
+- implement basic mock generation service
+- implement runtime GET/POST engine
+
+## Frontend
+- scaffold dashboard and workspace
+- build schema editor UI
+- build field type and mock strategy forms
+- build data preview panel
+- build endpoint panel with copy examples
+
+## Shared
+- define Zod schemas
+- define shared types
+- define API contracts
+- set naming conventions for project, table, and field slugs
+
+---
+
+# 28. Short Internal Summary for Claude / Cursor
+
+Morpheus.dev is a developer tool that creates a working mock backend from a visual schema. Users create projects, define tables and fields, generate mock data, define relationships, and automatically get live REST endpoints that can be consumed by their frontend during development. The system must separate metadata from runtime data. Metadata lives in PostgreSQL. Runtime records live in SQLite per project. The frontend is React + TypeScript. The backend is Fastify + TypeScript. The MVP focuses on table creation, schema definition, mock data generation, relationships, and GET/POST endpoints. Export to Supabase and advanced canvas workflows come later.
+
+---
+
+# Usage Tracking & Metering
+
+## Purpose
+
+The system must include a built-in usage tracking layer to monitor resource consumption per project. This is required for:
+
+- enforcing usage limits (free vs paid tiers)
+- preventing abuse
+- enabling monetization
+- understanding infrastructure costs
+
+Usage tracking is a core architectural requirement and must not be treated as an optional feature.
+
+---
+
+## What Must Be Tracked
+
+### API Requests
+
+Track all runtime API calls per project.
+
+Requirements:
+- total request count
+- count per endpoint
+- count per HTTP method (GET, POST, etc.)
+- timestamps for usage periods
+
+```ts
+type ApiUsage = {
+  projectId: string
+  totalRequests: number
+  requestsByEndpoint: Record<string, number>
+  requestsByMethod: Record<string, number>
+  periodStart: string
+  periodEnd: string
+}

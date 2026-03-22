@@ -12,6 +12,7 @@ import {
 import UserProfile from "@/components/user-profile";
 import {
   Brush,
+  FolderKanban,
   HomeIcon,
   LucideGitBranchPlus,
   MonitorSmartphone,
@@ -41,6 +42,14 @@ export default function DashboardTopNav({ children }: { children: ReactNode }) {
                   <Button variant="outline" className="w-full">
                     <HomeIcon className="mr-2 h-4 w-4" />
                     Overview
+                  </Button>
+                </Link>
+              </DialogClose>
+              <DialogClose asChild>
+                <Link prefetch={true} href="/dashboard/projects">
+                  <Button variant="outline" className="w-full">
+                    <FolderKanban className="mr-2 h-4 w-4" />
+                    Projects
                   </Button>
                 </Link>
               </DialogClose>

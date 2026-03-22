@@ -1,3 +1,5 @@
+"use client";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -82,7 +84,7 @@ export default function UserProfile({ mini }: { mini?: boolean }) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <div
-          className={`flex gap-2 justify-start items-center w-full rounded ${mini ? "" : "px-4 pt-2 pb-3"}`}
+          className={`flex items-center justify-start gap-2 rounded outline-none ${mini ? "w-auto cursor-pointer" : "w-full px-4 pt-2 pb-3"}`}
         >
           <Avatar>
             {loading ? (

@@ -4,6 +4,7 @@ import UserProfile from "@/components/user-profile";
 import clsx from "clsx";
 import {
   Banknote,
+  FolderKanban,
   HomeIcon,
   LucideIcon,
   MessageCircleIcon,
@@ -24,6 +25,11 @@ const navItems: NavItem[] = [
     label: "Overview",
     href: "/dashboard",
     icon: HomeIcon,
+  },
+  {
+    label: "Projects",
+    href: "/dashboard/projects",
+    icon: FolderKanban,
   },
   {
     label: "Chat",
@@ -61,21 +67,27 @@ export default function DashboardSideBar() {
 
         <nav className="flex flex-col h-full justify-between items-start w-full space-y-1">
           <div className="w-full space-y-1 p-4">
-            {navItems.map((item) => (
-              <div
-                key={item.href}
-                onClick={() => router.push(item.href)}
-                className={clsx(
-                  "flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:cursor-pointer",
-                  pathname === item.href
-                    ? "bg-primary/10 text-primary hover:bg-primary/20"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </div>
-            ))}
+            {navItems.map((item) => {
+              const active =
+                pathname === item.href ||
+                (item.href !== "/dashboard" &&
+                  pathname.startsWith(`${item.href}/`));
+              return (
+                <div
+                  key={item.href}
+                  onClick={() => router.push(item.href)}
+                  className={clsx(
+                    "flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    active
+                      ? "bg-accent-secondary/15 text-accent-secondary-soft hover:bg-accent-secondary/25"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.label}
+                </div>
+              );
+            })}
           </div>
 
           <div className="flex flex-col gap-2 w-full">
@@ -85,7 +97,7 @@ export default function DashboardSideBar() {
                 className={clsx(
                   "flex items-center w-full gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:cursor-pointer",
                   pathname === "/dashboard/settings"
-                    ? "bg-primary/10 text-primary hover:bg-primary/20"
+                    ? "bg-accent-secondary/15 text-accent-secondary-soft hover:bg-accent-secondary/25"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >

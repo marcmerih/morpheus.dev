@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 6, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
+    {"offset": {"line": 52, "column": 0}, "map": {"version":3,"sources":["file:///Users/atasm/Documents/digital-portfolio-creator/app/api/chat/route.ts"],"sourcesContent":["import { openai } from \"@ai-sdk/openai\";\nimport { streamText } from \"ai\";\n\nexport async function POST(req: Request) {\n  const { messages } = await req.json();\n\n  const result = streamText({\n    model: openai.responses(\"gpt-4o\"),\n    messages,\n    tools: {\n      web_search_preview: openai.tools.webSearchPreview(),\n    },\n  });\n\n  return result.toDataStreamResponse();\n}\n"],"names":[],"mappings":";;;AAAA;AACA;;;AAEO,eAAe,KAAK,GAAY;IACrC,MAAM,EAAE,QAAQ,EAAE,GAAG,MAAM,IAAI,IAAI;IAEnC,MAAM,SAAS,CAAA,GAAA,sJAAA,CAAA,aAAU,AAAD,EAAE;QACxB,OAAO,yJAAA,CAAA,SAAM,CAAC,SAAS,CAAC;QACxB;QACA,OAAO;YACL,oBAAoB,yJAAA,CAAA,SAAM,CAAC,KAAK,CAAC,gBAAgB;QACnD;IACF;IAEA,OAAO,OAAO,oBAAoB;AACpC","debugId":null}}]
+}
